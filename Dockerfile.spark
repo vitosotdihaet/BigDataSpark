@@ -1,0 +1,12 @@
+FROM bitnami/spark:3.5.5
+
+USER root
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    && pip install --no-cache-dir \
+    pandas \
+    pyspark \
+    clickhouse-connect \
+    && useradd -u 1001 -g 0 -d /tmp -s /sbin/nologin spark-user
+
+USER 1001

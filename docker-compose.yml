@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: lab2
+      POSTGRES_USER: spark
+      POSTGRES_PASSWORD: bomba
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./data:/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - big-data-spark-net
+
+  spark-master:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_NO_DAEMONIZE=yes
+      - HOME=/tmp
+    volumes:
+      - ./data:/data
+      - ./apps:/apps
+      - ./jdbc-drivers:/jdbc-drivers
+    ports:
+      - "7077:7077"
+      - "8080:8080"
+    networks:
+      - big-data-spark-net
+
+  spark-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_NO_DAEMONIZE=yes
+    volumes:
+      - ./data:/data
+      - ./apps:/apps
+      - ./jdbc-drivers:/jdbc-drivers
+    networks:
+      - big-data-spark-net
+
+  clickhouse:
+    image: yandex/clickhouse-server:latest
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    networks:
+      - big-data-spark-net
+
+volumes:
+  pg_data:
+
+networks:
+  big-data-spark-net:
+    driver: bridge
